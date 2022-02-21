@@ -10,7 +10,7 @@ const Users = require("../users/users-model");
 */
 function restricted(req, res, next) {
   console.log("Restricted Session: ", req.session.user);
-  if (req.session.user === null) {
+  if (!req.session.user) {
     res.status(401).json({ message: "You shall not pass!" });
   } else {
     next();

@@ -71,7 +71,6 @@ router.post("/login", checkUsernameExists, (req, res, next) => {
   const password = req.body.password;
   if (bcrypt.compareSync(password, req.user.password)) {
     req.session.user = req.user;
-    console.log("Login Session: ", req.session);
     res.status(200).json({ message: `Welcome ${req.user.username}` });
   } else {
     res.status(401).json({ message: "Invalid credentials" });
@@ -94,9 +93,9 @@ router.post("/login", checkUsernameExists, (req, res, next) => {
   }
  */
 router.get("/logout", (req, res, next) => {
-  if (req.session) {
+  if (req.session.user) {
     req.session.destroy((err) => {
-      if (err !== null) {
+      if (err) {
         res.status(500).json({ message: "error while logging out" });
       } else {
         res.status(200).json({ message: "logged out" });
