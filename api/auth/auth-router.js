@@ -6,7 +6,6 @@ const bcrypt = require("bcryptjs");
 const Users = require("../users/users-model");
 
 const {
-  restricted,
   checkPasswordLength,
   checkUsernameExists,
   checkUsernameFree,
@@ -35,9 +34,22 @@ const {
   }
  */
 
-router.post("/register", (req, res, next) => {
-  res.json("working");
-});
+router.post(
+  "/register",
+  checkUsernameFree,
+  checkPasswordLength,
+  (req, res, next) => {
+    try {
+      const user = req.user;
+      const hash = bcrypt.hashSync(user.password, 12);
+      user.password = hash;
+      let result = await Users.add(user);
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500).json({ message: "error adding user" });
+    }
+  }
+);
 
 /**
   2 [POST] /api/auth/login { "username": "sue", "password": "1234" }
@@ -55,6 +67,17 @@ router.post("/register", (req, res, next) => {
   }
  */
 
+router.post("/login", checkUsernameExists, (req, res, next) => {
+  const password = req.body.password;
+  if (bcrypt.compareSync(password, req.user.password)) {
+    req.session.user = req.user;
+    res.status(200).json({ message: `Welcome ${req.user.username}` });
+  } else {
+    res.status(401).json({ message: "Invalid credentials" });
+  }
+  res.json("login working");
+});
+
 /**
   3 [GET] /api/auth/logout
 
@@ -70,6 +93,19 @@ router.post("/register", (req, res, next) => {
     "message": "no session"
   }
  */
+router.get("/logout", (req, res, next) => {
+  if (req.session) {
+    req.session.destroy((err) => {
+      if (err !== null) {
+        res.status(500).json({ message: "error while logging out" });
+      } else {
+        res.status(200).json({ message: "logged out" });
+      }
+    });
+  } else {
+    res.status(200).json({ message: "no session" });
+  }
+});
 
 // Don't forget to add the router to the `exports` object so it can be required in other modules
 
